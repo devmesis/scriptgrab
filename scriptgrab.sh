@@ -376,7 +376,7 @@ else
     read -rp $'\n\e[1;33m👉 Your choice: \e[0m' reply
 
     if [[ "$reply" =~ ^[qQ]$ ]]; then
-      printf "\n\e[1;33m👋 Bye!\e[0m\n"
+      printf "\n\e[1;33m👋 Bye!\e[0m\n\n"
       exit 0
     fi
 

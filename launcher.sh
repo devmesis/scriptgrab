@@ -102,7 +102,7 @@ done
 while true; do
   read -rp $'\n\e[1;33m👉 Your choice (Q to quit): \e[0m' reply
   case "${reply,,}" in
-    q) printf "\n\e[1;33m👋 Bye!\e[0m\n"; exit 0 ;;
+      q) printf "\n\e[1;33m👋 Bye!\e[0m\n\n"; exit 0 ;;
     [1-9]|[1-9][0-9]*)
       if (( reply >= 1 && reply <= ${#names[@]} )); then
         script_name="${names[$((reply-1))]}"
