@@ -13,10 +13,10 @@
 <!-- About -->
 ### 🛠️ What’s This?
 
-###### scriptgrab is for the doers. Grab scripts, run them fast, and skip the boring stuff.
+###### Scriptgrab is for the doers. Grab scripts, run them fast, and skip the boring stuff.
 #####	•	❌ No downloads
 #####	•	❌ No setup
-#####	•	✅ Just copy, paste, and go
+#####	•	✅ One command to rule them all.
 
 <br>
 
