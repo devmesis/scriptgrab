@@ -8,9 +8,17 @@ set -euo pipefail
 clear
 MSG_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/message.txt"
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/version.txt"
+CLOUD_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/refs/heads/main/scriptgrab/cloud.txt"
 
 MSG=$(curl -sf "$MSG_URL" || :)
 REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "Cracked")
+CLOUD_STATUS=$(curl -sf "$CLOUD_URL" | tr -d '\r\n' || echo "no")
+
+if [[ "${CLOUD_STATUS,,}" == "yes" ]]; then
+  CLOUD_ICON="☁️"
+else
+  CLOUD_ICON="⚡"
+fi
 
 BANNER=$(cat <<'EOF'
 ┏┓   •   ┏┓    ┓
@@ -26,11 +34,12 @@ while IFS= read -r line; do
 done <<<"$BANNER"
 
 printf "\e[1;33mBy Devmesis\e[0m\n"
-printf "\e[1;32mVersion: %s\e[0m\n" "$REMOTE_VERSION"
+printf "%s \e[1;32mVersion: %s\e[0m\n" "$CLOUD_ICON" "$REMOTE_VERSION"
 if [[ ${MSG+x} && -n "${MSG// }" ]]; then
   printf "\n\e[1;33m%s\e[0m\n" "$MSG"
 fi
 printf "\n" && sleep 0.5
+
 
 # ────────────────────────────────────────────────
 #  Main Menu
@@ -44,7 +53,7 @@ done
 while true; do
   read -rp $'\n\e[1;33m👉 Your choice: ' choice
   case "${choice,,}" in
-    q) printf "\n\e[1;33m👋 Bye!\e[0m\n"; exit 0 ;;
+      q) printf "\n\e[1;33m👋 Bye!\e[0m\n\n"; exit 0 ;;
     [1-5])
       opt="${OPTIONS[$((choice-1))]}"
       case "$opt" in

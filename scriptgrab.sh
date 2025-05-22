@@ -2,21 +2,22 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-
 # ────────────────────────────────────────────────
 #  🐍 ScriptGrab — Boot Splash + Version Display
 # ────────────────────────────────────────────────
 clear
 MSG_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/message.txt"
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/version.txt"
-LOCAL_VERSION_FILE="/Users/devmesis/developer/scriptgrab/scriptgrab/version.txt"
+CLOUD_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/cloud.txt"
 
 MSG=$(curl -sf "$MSG_URL" || :)
-REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "unknown")
-if [[ -f "$LOCAL_VERSION_FILE" ]]; then
-  LOCAL_VERSION=$(cat "$LOCAL_VERSION_FILE" | tr -d '\r\n')
+REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "Cracked")
+CLOUD_STATUS=$(curl -sf "$CLOUD_URL" | tr -d '\r\n' || echo "no")
+
+if [[ "${CLOUD_STATUS,,}" == "yes" ]]; then
+  CLOUD_ICON="☁️"
 else
-  LOCAL_VERSION="unknown"
+  CLOUD_ICON="⚡"
 fi
 
 BANNER=$(cat <<'EOF'
@@ -33,13 +34,12 @@ while IFS= read -r line; do
 done <<<"$BANNER"
 
 printf "\e[1;33mBy Devmesis\e[0m\n"
-printf "\e[1;32mCurrent version: %s\e[0m\n" "$LOCAL_VERSION"
-if [[ "$REMOTE_VERSION" != "unknown" && "$LOCAL_VERSION" != "unknown" && "$REMOTE_VERSION" != "$LOCAL_VERSION" ]]; then
-  printf "\n\e[1;31m🚨 New version available: %s! Get the latest by typing update or auto-update\n\e[0m" "$REMOTE_VERSION"
-fi
-if [[ -n $MSG ]]; then
+printf "%s \e[1;32mVersion: %s\e[0m\n" "$CLOUD_ICON" "$REMOTE_VERSION"
+
+if [[ ${MSG+x} && -n "${MSG// }" ]]; then
   printf "\n\e[1;33m%s\e[0m\n" "$MSG"
 fi
+
 printf "\n" && sleep 0.5
 
 # ────────────────────────────────────────────────
@@ -56,7 +56,8 @@ command -v bash >/dev/null 2>&1   || { echo -e "\e[1;31m❌ Bash required. Abort
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SYSTEM_FILE="$SCRIPT_DIR/scriptgrab/system.txt"
 BETA_FILE="$SCRIPT_DIR/scriptgrab/beta.txt"
-AUTO_UPDATE_FILE="/Users/devmesis/scriptgrab/scriptgrab/update.txt"
+AUTO_UPDATE_FILE="$SCRIPT_DIR/scriptgrab/update.txt"
+AUTO_UPDATE_SCRIPT="$SCRIPT_DIR/scriptgrab/updater.py"
 
 function secret_menu() {
   while true; do
@@ -94,8 +95,8 @@ function secret_menu() {
           printf "\n\e[1;32mAuto-update enabled.\e[0m\n\n"
         fi
         ;;
-      exit|q|"")  # <--- q now works as exit
-        printf "\nExiting secret maenu and restarting script...\n\n"
+      exit|q|"")
+        printf "\nExiting secret menu and restarting script...\n\n"
         exec "$0" "$@"
         ;;
       *)
@@ -105,20 +106,15 @@ function secret_menu() {
   done
 }
 
-
 # ────────────────────────────────────────────────
 #  Auto-update on Boot (if enabled)
 # ────────────────────────────────────────────────
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AUTO_UPDATE_FILE="$SCRIPT_DIR/scriptgrab/update.txt"
 
 if [[ -f "$AUTO_UPDATE_FILE" ]] && grep -q "yes" "$AUTO_UPDATE_FILE"; then
   if [[ -f "$AUTO_UPDATE_SCRIPT" ]]; then
     python3 "$AUTO_UPDATE_SCRIPT"
   fi
 fi
-
 
 # ────────────────────────────────────────────────
 #  OS Selection + Beta Flag
@@ -136,13 +132,6 @@ else
     break
   done
 fi
-
-if [[ -f $BETA_FILE ]]; then
-  LOAD_BETA="$(<"$BETA_FILE")"
-else
-  LOAD_BETA="no"
-fi
-
 
 if [[ -f $BETA_FILE ]]; then
   LOAD_BETA="$(<"$BETA_FILE")"
@@ -296,7 +285,7 @@ if [[ "$SYSTEM" == "All" ]]; then
     read -rp $'\n\e[1;33m👉 Your choice: \e[0m' reply
 
     if [[ "$reply" =~ ^[qQ]$ ]]; then
-      printf "\n\e[1;33m👋 Bye!\e[0m\n"
+      printf "\n\e[1;33m👋 Bye!\e[0m\n\n"
       exit 0
     fi
 
