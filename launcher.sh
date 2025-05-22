@@ -10,7 +10,7 @@ MSG_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/m
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/version.txt"
 
 MSG=$(curl -sf "$MSG_URL" || :)
-REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "unknown")
+REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "Cracked")
 
 BANNER=$(cat <<'EOF'
 ┏┓   •   ┏┓    ┓
