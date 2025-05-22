@@ -46,8 +46,8 @@ printf "\n" && sleep 0.5
 #  Environment Checks
 # ────────────────────────────────────────────────
 
-command -v python3 >/dev/null 2>&1 || { echo -e "\e[1;31m❌ Python 3 required. Abort.\e[0m"; exit 1; }
-command -v bash >/dev/null 2>&1   || { echo -e "\e[1;31m❌ Bash required. Abort.\e[0m";   exit 1; }
+command -v python3 >/dev/null 2>&1 || { log_info -e "\e[1;31m❌ Python 3 required. Abort.\e[0m"; exit 1; }
+command -v bash >/dev/null 2>&1   || { log_info -e "\e[1;31m❌ Bash required. Abort.\e[0m";   exit 1; }
 
 # ────────────────────────────────────────────────
 #  Secret Settings Menu
@@ -58,6 +58,13 @@ SYSTEM_FILE="$SCRIPT_DIR/scriptgrab/system.txt"
 BETA_FILE="$SCRIPT_DIR/scriptgrab/beta.txt"
 AUTO_UPDATE_FILE="$SCRIPT_DIR/scriptgrab/update.txt"
 AUTO_UPDATE_SCRIPT="$SCRIPT_DIR/scriptgrab/updater.py"
+LOG_FILE="$SCRIPT_DIR/scriptgrab/logs.txt"
+
+function log_info() {
+  if [[ -f "$LOG_FILE" ]] && grep -iq "yes" "$LOG_FILE"; then
+    echo -e "\e[1;35m$1\e[0m"
+  fi
+}
 
 function secret_menu() {
   while true; do
@@ -174,9 +181,9 @@ declare -A DISPLAY_BY_FOLDER
 
 if [[ "$SYSTEM" == "All" ]]; then
   for path in "${GH_PATHS[@]}"; do
-    echo "🔍 Checking: $path"
+    log_info "🔍 Checking: $path"
     response=$(curl -sf -H "User-Agent: ScriptGrab" -H "$AUTH_HEADER" --max-time 10 "https://api.github.com/repos/devmesis/scriptgrab/contents/$path") || {
-      echo "⚠️ Failed to fetch $path"
+      log_info "⚠️ Failed to fetch $path"
       continue
     }
 
@@ -211,9 +218,9 @@ else
   # For non-all system, just fetch scripts into one array
   raw_names=()
   for path in "${GH_PATHS[@]}"; do
-    echo "🔍 Checking: $path"
+    log_info "🔍 Checking: $path"
     response=$(curl -sf -H "User-Agent: ScriptGrab" -H "$AUTH_HEADER" --max-time 10 "https://api.github.com/repos/devmesis/scriptgrab/contents/$path") || {
-      echo "⚠️ Failed to fetch $path"
+      log_info "⚠️ Failed to fetch $path"
       continue
     }
 
@@ -263,23 +270,28 @@ if [[ "$SYSTEM" == "All" ]]; then
   declare -A INDEX_TO_SCRIPT
   echo -e "\n\e[1;36m📜 Available Scripts:\e[0m\n"
 
-  for folder in MacOS Linux Windows Other; do
-    scripts="${SCRIPTS_BY_FOLDER[$folder]}"
-    if [[ -z "$scripts" ]]; then
-      continue
-    fi
-    echo -e "\e[1;33m📜 $folder Scripts:\e[0m"
+  rate_limited=true
 
-    while IFS= read -r script; do
-      [[ -z "$script" ]] && continue
-      base="${script%.*}"
-      pretty="${base//_/ }"
-      printf "%2d) %s\n" "$index" "$pretty"
-      INDEX_TO_SCRIPT["$index,$folder"]="$script"
-      ((index++))
-    done <<<"$scripts"
-    echo
+  for folder in MacOS Linux Windows Other; do
+    if [[ -v SCRIPTS_BY_FOLDER[$folder] ]] && [[ -n "${SCRIPTS_BY_FOLDER[$folder]}" ]]; then
+      scripts="${SCRIPTS_BY_FOLDER[$folder]}"
+      echo -e "\e[1;33m📜 $folder Scripts:\e[0m"
+      while IFS= read -r script; do
+        [[ -z "$script" ]] && continue
+        base="${script%.*}"
+        pretty="${base//_/ }"
+        printf "%2d) %s\n" "$index" "$pretty"
+        INDEX_TO_SCRIPT["$index,$folder"]="$script"
+        ((index++))
+      done <<<"$scripts"
+      echo
+      rate_limited=false
+    fi
   done
+
+  if $rate_limited; then
+    echo "🚫 You have been rate limited try again in 1 hour"
+  fi
 
   while true; do
     read -rp $'\n\e[1;33m👉 Your choice: \e[0m' reply
