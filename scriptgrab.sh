@@ -15,6 +15,7 @@ CLOUD_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab
     AUTO_UPDATE_FILE="$SCRIPT_DIR/scriptgrab/update.txt"
     AUTO_UPDATE_SCRIPT="$SCRIPT_DIR/scriptgrab/updater.py"
     LOG_FILE="$SCRIPT_DIR/scriptgrab/logs.txt"
+    LOCAL_SCRIPT_DIR="/Users/devmesis/scriptgrab/scripts"
 
     # Read local version from file
     LOCAL_VERSION_FILE="/Users/devmesis/Developer/scriptgrab/scriptgrab/version.txt"
@@ -125,7 +126,7 @@ function secret_menu() {
       beta)
         if [[ -f $BETA_FILE ]]; then
           rm -f "$BETA_FILE"
-          printf "\n\e[1;33mBeta mode disabled.\e[0m\n\n"
+          printf "\n\e[1;31mBeta mode disabled.\e[0m\n\n"
         else
           echo "yes" > "$BETA_FILE"
           printf "\n\e[1;32mBeta mode enabled.\e[0m\n\n"
@@ -134,7 +135,7 @@ function secret_menu() {
       all)
         if [[ -f $SYSTEM_FILE ]] && [[ "$(cat "$SYSTEM_FILE")" == "All" ]]; then
           rm -f "$SYSTEM_FILE"
-          printf "\n\e[1;33mAll mode disabled.\e[0m\n\n"
+          printf "\n\e[1;31mAll mode disabled.\e[0m\n\n"
         else
           echo "All" > "$SYSTEM_FILE"
           printf "\n\e[1;32mAll mode enabled.\e[0m\n\n"
@@ -143,14 +144,20 @@ function secret_menu() {
       logs)
         if [[ -f $LOG_FILE ]] && grep -iq "yes" "$LOG_FILE"; then
           echo "no" > "$LOG_FILE"
-          printf "\n\e[1;33mLogging disabled.\e[0m\n\n"
+          printf "\n\e[1;31mLogging disabled.\e[0m\n\n"
         else
           echo "yes" > "$LOG_FILE"
           printf "\n\e[1;32mLogging enabled.\e[0m\n\n"
         fi
         ;;
-      exit|q|"")
+        os)
+                rm -f "$SYSTEM_FILE"
+                printf "\n\e[1;32mOS selection cleared. Restarting for new OS choice...\e[0m\n\n"
+                exec "$0" "$@"
+                ;;
+      exit|q|r|"")
         printf "\nExiting secret menu and restarting script...\n\n"
+        sleep 1
         exec "$0" "$@"
         ;;
       *)
@@ -219,6 +226,7 @@ fi
 #  Fetch Scripts with portable JSON parsing fallback
 # ────────────────────────────────────────────────
 
+if [[ "${CLOUD_STATUS,,}" == "yes" ]]; then
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   AUTH_HEADER="Authorization: token $GITHUB_TOKEN"
 else
@@ -363,8 +371,70 @@ else
     SCRIPTS_BY_FOLDER["Beta"]=$(printf '%s\n' "${filtered_beta_files[@]}")
   fi
 fi
+else
+    # Map SYSTEM to the correct folder name
+    case "$SYSTEM" in
+      Mac)   LOCAL_OS_FOLDER="MacOS" ;;
+      Linux) LOCAL_OS_FOLDER="Linux" ;;
+      Windows) LOCAL_OS_FOLDER="Windows" ;;
+      Other) LOCAL_OS_FOLDER="Other" ;;
+      All)   LOCAL_OS_FOLDER="All" ;;
+      *)     LOCAL_OS_FOLDER="$SYSTEM" ;;
+    esac
 
+    echo -e "\n\e[1;36m📜 Scripts for $SYSTEM:\e[0m\n"
+    INDEX=1
+    declare -A INDEX_TO_SCRIPT
 
+    if [[ "$LOCAL_OS_FOLDER" == "All" ]]; then
+      FIND_PATH="$LOCAL_SCRIPT_DIR"
+    else
+      FIND_PATH="$LOCAL_SCRIPT_DIR/$LOCAL_OS_FOLDER"
+    fi
+
+    # Only list scripts if the folder exists
+    if [[ -d "$FIND_PATH" ]]; then
+        while IFS= read -r script; do
+          base=$(basename "$script")
+          pretty="${base%.*}"
+          pretty="${pretty//_/ }"
+          printf " %2d) %s\n" "$INDEX" "$pretty"
+          INDEX_TO_SCRIPT["$INDEX"]="$script"
+          ((INDEX++))
+        done < <(find "$FIND_PATH" -type f \( -name "*.sh" -o -name "*.py" \) | sort)
+    fi
+
+    if [[ $INDEX -eq 1 ]]; then
+      echo "⚠ No local scripts found for $SYSTEM in $FIND_PATH."
+      exit 0
+    fi
+
+    while true; do
+      read -rp $'\n\e[1;33m👉 Your choice: \e[0m' reply
+      case "${reply,,}" in
+        q) echo -e "\n\e[1;33m👋 Bye!\e[0m\n\n"; exit 0 ;;
+        cheats)
+              secret_menu
+              continue
+              ;;
+        *)
+          if [[ "$reply" =~ ^[0-9]+$ ]] && [[ -n "${INDEX_TO_SCRIPT[$reply]:-}" ]]; then
+            script_path="${INDEX_TO_SCRIPT[$reply]}"
+            echo -e "\n\e[1;34m🚀 Running $script_path\e[0m\n"
+            if [[ "$script_path" == *.py ]]; then
+              python3 "$script_path"
+            else
+              bash "$script_path"
+            fi
+            exit 0
+          else
+            echo "⚠ Invalid choice."
+          fi
+          ;;
+      esac
+    done
+
+fi
 
 # ────────────────────────────────────────────────
 #  Interactive Menu (Global Index, Beta-aware, U=Update, A=Auto-Update)
