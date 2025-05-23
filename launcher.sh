@@ -12,13 +12,6 @@ CLOUD_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/refs/heads/main
 
 MSG=$(curl -sf "$MSG_URL" || :)
 REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "Cracked")
-CLOUD_STATUS=$(curl -sf "$CLOUD_URL" | tr -d '\r\n' || echo "no")
-
-if [[ "${CLOUD_STATUS,,}" == "yes" ]]; then
-  CLOUD_ICON="☁️"
-else
-  CLOUD_ICON="⚡"
-fi
 
 BANNER=$(cat <<'EOF'
 ┏┓   •   ┏┓    ┓
@@ -34,7 +27,7 @@ while IFS= read -r line; do
 done <<<"$BANNER"
 
 printf "\e[1;33mBy Devmesis\e[0m\n"
-printf "%s \e[1;32mVersion: %s\e[0m\n" "$CLOUD_ICON" "$REMOTE_VERSION"
+printf "\e[1;32mVersion: %s\e[0m\n" "$REMOTE_VERSION"
 if [[ ${MSG+x} && -n "${MSG// }" ]]; then
   printf "\n\e[1;33m%s\e[0m\n" "$MSG"
 fi
@@ -44,7 +37,6 @@ printf "\n" && sleep 0.5
 # ────────────────────────────────────────────────
 #  Main Menu
 # ────────────────────────────────────────────────
-
 OPTIONS=("Mac" "Windows" "Linux" "Other" "Download")
 for i in "${!OPTIONS[@]}"; do
   printf "%d) %s\n" $((i+1)) "${OPTIONS[i]}"
@@ -56,17 +48,17 @@ while true; do
       q) printf "\n\e[1;33m👋 Bye!\e[0m\n\n"; exit 0 ;;
     [1-5])
       opt="${OPTIONS[$((choice-1))]}"
+      if [[ "$opt" == "Download" ]]; then
+        echo -e "\n\e[1;34m🚀 Installing ScriptGrab...\e[0m"
+        curl -sL "https://github.com/devmesis/scriptgrab/raw/main/scripts/Application/install.py" | python3
+        echo -e "\n\e[1;32m✅ ScriptGrab installation completed.\e[0m\n"
+        exit 0
+      fi
       case "$opt" in
         Mac)      SYSTEM="MacOS";;
         Windows)  SYSTEM="Windows";;
         Linux)    SYSTEM="Linux";;
         Other)    SYSTEM="Other";;
-        "Install ScriptGrab")
-          echo -e "\n\e[1;34m🚀 Installing ScriptGrab...\e[0m"
-          curl -sL "https://github.com/devmesis/scriptgrab/raw/main/scripts/Application/install.py" | python3
-          echo -e "\n\e[1;32m✅ ScriptGrab installation completed.\e[0m\n"
-          exit 0
-          ;;
       esac
       break
       ;;
@@ -78,7 +70,7 @@ GH_USER="devmesis"
 GH_REPO="scriptgrab"
 GH_BRANCH="main"
 GH_OSFOLDER="scripts/$SYSTEM"
-printf "\e[1;34m🌐 Fetching available scripts for %s…\e[0m\n" "$SYSTEM"
+printf "\e[1;34m🌐 Fetching scripts for %s\e[0m\n" "$SYSTEM"
 
 # Get the full tree recursively
 tree=$(curl -sf "https://api.github.com/repos/$GH_USER/$GH_REPO/git/trees/$GH_BRANCH?recursive=1") || {
@@ -101,7 +93,7 @@ if (( ${#names[@]} == 0 )); then
   exit 1
 fi
 
-echo -e "\n\e[1;36m📜 Available Scripts:\e[0m\n"
+echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
 for i in "${!names[@]}"; do
   base="${names[$i]%.*}"
   pretty="${base//_/ }"
@@ -116,7 +108,7 @@ while true; do
       if (( reply >= 1 && reply <= ${#names[@]} )); then
         script_name="${names[$((reply-1))]}"
         url="${urls[$((reply-1))]}"
-        echo -e "\n\e[1;34m🚀 Running script $script_name...\e[0m\n"
+        echo -e "\n\e[1;34m🚀 Running $script_name\e[0m\n"
         if [[ "$script_name" == *.py ]]; then
           curl -sL "$url" | python3
         elif [[ "$script_name" == *.ps1 ]]; then

@@ -17,7 +17,7 @@ CLOUD_STATUS=$(curl -sf "$CLOUD_URL" | tr -d '\r\n' || echo "no")
 if [[ "${CLOUD_STATUS,,}" == "yes" ]]; then
   CLOUD_ICON="☁️"
 else
-  CLOUD_ICON="⚡"
+  CLOUD_ICON="🔌"
 fi
 
 BANNER=$(cat <<'EOF'
@@ -46,8 +46,8 @@ printf "\n" && sleep 0.5
 #  Environment Checks
 # ────────────────────────────────────────────────
 
-command -v python3 >/dev/null 2>&1 || { log_info -e "\e[1;31m❌ Python 3 required. Abort.\e[0m"; exit 1; }
-command -v bash >/dev/null 2>&1   || { log_info -e "\e[1;31m❌ Bash required. Abort.\e[0m";   exit 1; }
+command -v python3 >/dev/null 2>&1 || { log_info "❌ Python 3 required. Abort."; exit 1; }
+command -v bash >/dev/null 2>&1   || { log_info "❌ Bash required. Abort."; exit 1; }
 
 # ────────────────────────────────────────────────
 #  Secret Settings Menu
@@ -173,7 +173,7 @@ else
   AUTH_HEADER=""
 fi
 
-printf "\e[1;34m🌐 Fetching available scripts for %s…\e[0m\n" "$SYSTEM"
+printf "\e[1;34m🌐 Fetching scripts for %s\e[0m\n" "$SYSTEM"
 
 # Declare associative arrays to hold scripts by folder (only if bash supports it)
 declare -A SCRIPTS_BY_FOLDER
@@ -268,7 +268,7 @@ PS3=$'\n\e[1;31m❌ Q for Quit\e[0m\n\n\e[1;33m👉 Your choice : \e[0m'
 if [[ "$SYSTEM" == "All" ]]; then
   index=1
   declare -A INDEX_TO_SCRIPT
-  echo -e "\n\e[1;36m📜 Available Scripts:\e[0m\n"
+  echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
 
   rate_limited=true
 
@@ -303,7 +303,7 @@ if [[ "$SYSTEM" == "All" ]]; then
 
     if [[ "$reply" == "cheats" ]]; then
       secret_menu
-      echo -e "\n\e[1;36m📜 Available Scripts:\e[0m\n"
+      echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
       index=1
       for folder in MacOS Linux Windows Other; do
         scripts="${SCRIPTS_BY_FOLDER[$folder]}"
@@ -351,9 +351,13 @@ if [[ "$SYSTEM" == "All" ]]; then
         fi
       done
       if (( found )); then
-        echo -e "\n\e[1;34m🚀 Running script $script_name from $folder...\e[0m\n"
+        echo -e "\n\e[1;34m🚀 Running $script_name from $folder\e[0m\n"
         url="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scripts/$folder/$script_name"
-        curl -sL "$url" | bash
+            if [[ "$script_name" == *.py ]]; then
+              curl -sL "$url" | python3
+            else
+              curl -sL "$url" | bash
+            fi
         exit 0
       else
         echo "⚠ Invalid choice."
@@ -364,7 +368,7 @@ if [[ "$SYSTEM" == "All" ]]; then
   done
 
 else
-  echo -e "\n\e[1;36m📜 Available Scripts:\e[0m\n"
+  echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
   index=1
   declare -A INDEX_TO_SCRIPT
 
@@ -383,7 +387,7 @@ else
 
     if [[ "$reply" == "cheats" ]]; then
       secret_menu
-      echo -e "\n\e[1;36m📜 Available Scripts:\e[0m\n"
+      echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
       for i in "${!ARR[@]}"; do
         printf "%2d) %s\n" "$((i+1))" "${DISPLAY[i]}"
         INDEX_TO_SCRIPT[$((i+1))]="${ARR[i]}"
@@ -394,9 +398,13 @@ else
     if [[ "$reply" =~ ^[0-9]+$ ]]; then
       if [[ -n "${INDEX_TO_SCRIPT[$reply]:-}" ]]; then
         script_name="${INDEX_TO_SCRIPT[$reply]}"
-        echo -e "\n\e[1;34m🚀 Running script $script_name...\e[0m\n"
+        echo -e "\n\e[1;34m🚀 Running $script_name\e[0m\n"
         url="<https://raw.githubusercontent.com/devmesis/scriptgrab/main/${GH_PATHS>[0]}/$script_name"
-        curl -sL "$url" | bash
+            if [[ "$script_name" == *.py ]]; then
+              curl -sL "$url" | python3
+            else
+              curl -sL "$url" | bash
+            fi
         exit 0
       else
         echo "⚠ Invalid choice."
