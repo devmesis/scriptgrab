@@ -253,14 +253,10 @@ fi
 
 
 # ────────────────────────────────────────────────
-#  Interactive Menu (Global Index, Beta-aware)
+#  Interactive Menu (Global Index, Beta-aware, U=Update, A=Auto-Update)
 # ────────────────────────────────────────────────
 
-# ────────────────────────────────────────────────
-#  Interactive Menu (Global Index, Beta-aware)
-# ────────────────────────────────────────────────
-
-PS3=$'\n\e[1;31m❌ Q for Quit\e[0m\n\n\e[1;33m👉 Your choice : \e[0m'
+PS3=$'\n\e[1;31m❌ Q=Quit | U=Update | A=Auto-Update\e[0m\n\n\e[1;33m👉 Your choice : \e[0m'
 
 if [[ "$SYSTEM" == "All" ]]; then
   echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
@@ -282,67 +278,63 @@ if [[ "$SYSTEM" == "All" ]]; then
         else
           printf " %2d) %s\n" "$INDEX" "$pretty"
         fi
-        INDEX_TO_SCRIPT["$INDEX"]="$folder/$script"  # Store full path
+        INDEX_TO_SCRIPT["$INDEX"]="$folder/$script"
         ((INDEX++))
       done <<< "${SCRIPTS_BY_FOLDER[$folder]}"
       echo
     fi
   done
 
-  if (( INDEX == 1 )); then
-    echo "❌ No scripts found!"
-    exit 1
-  fi
-
   while true; do
     read -rp $'\n\e[1;33m👉 Your choice: \e[0m' reply
 
-    if [[ "$reply" =~ ^[qQ]$ ]]; then
-      printf "\n\e[1;33m👋 Bye!\e[0m\n\n"
-      exit 0
-    fi
-
-    if [[ "$reply" == "cheats" ]]; then
-      secret_menu
-      echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
-      INDEX=1
-      for folder in "${folders[@]}"; do
-        if [[ -n "${SCRIPTS_BY_FOLDER[$folder]}" ]]; then
-          echo -e "\e[1;33m📜 $folder Scripts:\e[0m"
-          while IFS= read -r script; do
-            [[ -z "$script" ]] && continue
-            base="${script%.*}"
-            pretty="${base//_/ }"
-            if [[ "$folder" == "Beta" ]]; then
-              printf " %2d) [BETA] %s\n" "$INDEX" "$pretty"
-            else
-              printf " %2d) %s\n" "$INDEX" "$pretty"
-            fi
-            INDEX_TO_SCRIPT["$INDEX"]="$folder/$script"
-            ((INDEX++))
-          done <<< "${SCRIPTS_BY_FOLDER[$folder]}"
-          echo
-        fi
-      done
-      continue
-    fi
-
-    if [[ "$reply" == "update" ]]; then
+    case "${reply,,}" in
+      q)
+        printf "\n\e[1;33m👋 Bye!\e[0m\n\n"
+        exit 0
+        ;;
+      u)
       echo -e "\n\e[1;34m🔄 Updating ScriptGrab to latest version...\e[0m\n"
-      printf "\n" && sleep 2.0
-      exec "$0" "$@"
-    fi
 
-    if [[ "$reply" == "auto-update" ]]; then
-      if [[ -f $AUTO_UPDATE_FILE ]] && grep -q "yes" "$AUTO_UPDATE_FILE"; then
-        echo "no" > "$AUTO_UPDATE_FILE"
-        printf "\n\e[1;33mAuto-update disabled.\e[0m\n\n"
-      else
-        echo "yes" > "$AUTO_UPDATE_FILE"
-        printf "\n\e[1;32mAuto-update enabled.\e[0m\n\n"
-      fi
-      continue
-    fi
+      # Spinner animation for 2 seconds
+      spin='|/-\'
+      for i in {1..20}; do
+        i=$(( (i+1) %4 ))
+        printf "\r\e[1;36m[%c] Updating...\e[0m" "${spin:$i:1}"
+        sleep 0.1
+      done
+      printf "\r\e[1;36m[✔] Restarting!\e[0m\n"
+      sleep 0.3
+
+      exec "$0" "$@"
+        ;;
+      a)
+        if [[ -f $AUTO_UPDATE_FILE ]] && grep -q "yes" "$AUTO_UPDATE_FILE"; then
+          echo "no" > "$AUTO_UPDATE_FILE"
+          printf "\n\e[1;33mAuto-update disabled.\e[0m\n\n"
+        else
+          echo "yes" > "$AUTO_UPDATE_FILE"
+          printf "\n\e[1;32mAuto-update enabled.\e[0m\n\n"
+        fi
+        continue
+        ;;
+        cheats)
+              secret_menu
+              continue
+              ;;
+              r)
+                   echo -e "\n\e[1;34m🔁 Restarting ScriptGrab...\e[0m\n"
+                   spin='|/-\'
+                   for i in {1..20}; do
+                     i=$(( (i+1) %4 ))
+                     printf "\r\e[1;36m[%c] Restarting...\e[0m" "${spin:$i:1}"
+                     sleep 0.1
+                   done
+                   printf "\r\e[1;36m[✔] Restarting!\e[0m\n"
+                   sleep 0.3
+                   exec "$0" "$@"
+                   ;;
+               esac
 
     if [[ "$reply" =~ ^[0-9]+$ ]]; then
       if [[ -n "${INDEX_TO_SCRIPT[$reply]:-}" ]]; then
@@ -368,6 +360,7 @@ if [[ "$SYSTEM" == "All" ]]; then
       echo "⚠ Invalid choice."
     fi
   done
+fi
 
 else
   echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
