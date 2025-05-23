@@ -9,7 +9,7 @@ clear
 MSG_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/message.txt"
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/version.txt"
 CLOUD_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/cloud.txt"
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SCRIPT_DIR="$(dirname "$(realpath "$0")")"
     SYSTEM_FILE="$SCRIPT_DIR/scriptgrab/system.txt"
     BETA_FILE="$SCRIPT_DIR/scriptgrab/beta.txt"
     AUTO_UPDATE_FILE="$SCRIPT_DIR/scriptgrab/update.txt"
