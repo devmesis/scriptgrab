@@ -9,10 +9,58 @@ clear
 MSG_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/message.txt"
 REMOTE_VERSION_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/version.txt"
 CLOUD_URL="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scriptgrab/cloud.txt"
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SYSTEM_FILE="$SCRIPT_DIR/scriptgrab/system.txt"
+    BETA_FILE="$SCRIPT_DIR/scriptgrab/beta.txt"
+    AUTO_UPDATE_FILE="$SCRIPT_DIR/scriptgrab/update.txt"
+    AUTO_UPDATE_SCRIPT="$SCRIPT_DIR/scriptgrab/updater.py"
+    LOG_FILE="$SCRIPT_DIR/scriptgrab/logs.txt"
 
-MSG=$(curl -sf "$MSG_URL" || :)
-REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "Cracked")
-CLOUD_STATUS=$(curl -sf "$CLOUD_URL" | tr -d '\r\n' || echo "no")
+    # Read local version from file
+    LOCAL_VERSION_FILE="/Users/devmesis/Developer/scriptgrab/scriptgrab/version.txt"
+    if [[ -f "$LOCAL_VERSION_FILE" ]]; then
+      LOCAL_VERSION=$(<"$LOCAL_VERSION_FILE")
+    else
+      LOCAL_VERSION="unknown"
+    fi
+
+    function log_info() {
+      if [[ -f "$LOG_FILE" ]] && grep -iq "yes" "$LOG_FILE"; then
+        echo -e "\e[1;35m$1\e[0m"
+      fi
+    }
+
+    function github_fetch() {
+      local url="$1"
+      local tmpfile=$(mktemp)
+      local http_code
+      local response
+
+      http_code=$(curl -s -w "%{http_code}" -H "User-Agent: ScriptGrab" ${2:+-H "$2"} --max-time 10 -o "$tmpfile" "$url")
+      response=$(cat "$tmpfile")
+      rm -f "$tmpfile"
+
+      if [[ "$http_code" == "403" || "$http_code" == "429" ]] && [[ "$response" == *"rate limit"* ]]; then
+        echo -e "\n\e[1;31mStopping, Rate Limited — try again in 1hr\e[0m" | tee /dev/stderr
+        log_info "\e[1;36mGitHub says: $(echo "$response" | grep -o '"message":"[^"]*"' | cut -d: -f2-)\e[0m" | tee /dev/stderr
+        exit 1
+      fi
+
+      if [[ "$http_code" != "200" ]]; then
+        log_info "⚠️ Failed to fetch $url (HTTP $http_code)"
+        echo ""
+        return 1
+      fi
+
+      echo "$response"
+    }
+
+
+
+    MSG=$(curl -sf "$MSG_URL" || :)
+    REMOTE_VERSION=$(curl -sf "$REMOTE_VERSION_URL" | tr -d '\r\n' || echo "Cracked")
+    CLOUD_STATUS=$(curl -sf "$CLOUD_URL" | tr -d '\r\n' || echo "no")
+
 
 if [[ "${CLOUD_STATUS,,}" == "yes" ]]; then
   CLOUD_ICON="☁️"
@@ -34,7 +82,14 @@ while IFS= read -r line; do
 done <<<"$BANNER"
 
 printf "\e[1;33mBy Devmesis\e[0m\n"
-printf "%s \e[1;32mVersion: %s\e[0m\n" "$CLOUD_ICON" "$REMOTE_VERSION"
+printf "%s \e[1;32mVersion: %s\e[0m\n" "$CLOUD_ICON" "$LOCAL_VERSION"
+
+if [[ "$LOCAL_VERSION" != "unknown" && "$REMOTE_VERSION" != "Cracked" ]]; then
+  if [[ "$(printf '%s\n%s' "$LOCAL_VERSION" "$REMOTE_VERSION" | sort -V | head -n1)" == "$LOCAL_VERSION" && "$LOCAL_VERSION" != "$REMOTE_VERSION" ]]; then
+    printf "\n\e[1;33m🚨 New update available: \e[1;32m%s\e[1;33m!\e[0m\n" "$REMOTE_VERSION"
+    echo -e "\e[1;31mU for update or A to toggle auto update.\e[0m"
+  fi
+fi
 
 if [[ ${MSG+x} && -n "${MSG// }" ]]; then
   printf "\n\e[1;33m%s\e[0m\n" "$MSG"
@@ -53,18 +108,10 @@ command -v bash >/dev/null 2>&1   || { log_info "❌ Bash required. Abort."; exi
 #  Secret Settings Menu
 # ────────────────────────────────────────────────
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SYSTEM_FILE="$SCRIPT_DIR/scriptgrab/system.txt"
-BETA_FILE="$SCRIPT_DIR/scriptgrab/beta.txt"
-AUTO_UPDATE_FILE="$SCRIPT_DIR/scriptgrab/update.txt"
-AUTO_UPDATE_SCRIPT="$SCRIPT_DIR/scriptgrab/updater.py"
-LOG_FILE="$SCRIPT_DIR/scriptgrab/logs.txt"
 
-function log_info() {
-  if [[ -f "$LOG_FILE" ]] && grep -iq "yes" "$LOG_FILE"; then
-    echo -e "\e[1;35m$1\e[0m"
-  fi
-}
+
+
+
 
 function secret_menu() {
   while true; do
@@ -185,12 +232,13 @@ declare -A SCRIPTS_BY_FOLDER
 declare -A DISPLAY_BY_FOLDER
 
 if [[ "$SYSTEM" == "All" ]]; then
-  for path in "${GH_PATHS[@]}"; do
-    log_info "🔍 Checking: $path"
-    response=$(curl -sf -H "User-Agent: ScriptGrab" -H "$AUTH_HEADER" --max-time 10 "https://api.github.com/repos/devmesis/scriptgrab/contents/$path") || {
-      log_info "⚠️ Failed to fetch $path"
-      continue
-    }
+    for path in "${GH_PATHS[@]}"; do
+      log_info "🔍 Checking: $path"
+      response=$(github_fetch "https://api.github.com/repos/devmesis/scriptgrab/contents/$path" "$AUTH_HEADER")
+      if [[ -z "$response" ]]; then
+        log_info "⚠️ Failed to fetch $path"
+        continue
+      fi
 
     files=()
     if command -v jq >/dev/null 2>&1; then
@@ -222,10 +270,12 @@ if [[ "$SYSTEM" == "All" ]]; then
   # Only fetch Beta if enabled!
   if $BETA_ENABLED; then
     log_info "🔍 Checking: beta"
-    beta_response=$(curl -sf -H "User-Agent: ScriptGrab" --max-time 10 "https://api.github.com/repos/devmesis/betagrap/contents/beta") || {
+    beta_response=$(github_fetch "https://api.github.com/repos/devmesis/betagrap/contents/beta" "$AUTH_HEADER")
+    if [[ -z "$beta_response" ]]; then
       log_info "⚠️ Failed to fetch beta scripts"
       beta_response=""
-    }
+    fi
+
 
     beta_files=()
     if [[ -n "$beta_response" ]]; then
