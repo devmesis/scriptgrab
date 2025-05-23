@@ -119,8 +119,8 @@ function secret_menu() {
     case "$(echo "$CMD" | tr '[:upper:]' '[:lower:]')" in
       reset)
         rm -f "$SYSTEM_FILE" "$BETA_FILE" "$LOG_FILE"
-        printf "\n\e[1;32mPreferences reset. Please restart script.\e[0m\n\n"
-        exit 0
+        printf "\n\e[1;32mPreferences reset.\e[0m\n\n"
+
         ;;
       beta)
         if [[ -f $BETA_FILE ]]; then
@@ -240,6 +240,75 @@ if [[ "$SYSTEM" == "All" ]]; then
         continue
       fi
 
+      files=()
+      if command -v jq >/dev/null 2>&1; then
+        while IFS= read -r file; do
+          files+=("$file")
+        done < <(echo "$response" | jq -r '.[] | select(.name | test("\\.(py|sh)$"; "i")) | .name')
+      else
+        tmpfile=$(mktemp)
+        echo "$response" | grep -ioE '"name": "[^"]+\.(py|sh)"' | cut -d '"' -f4 > "$tmpfile"
+        while IFS= read -r file; do
+          files+=("$file")
+        done < "$tmpfile"
+        rm -f "$tmpfile"
+      fi
+
+      # Remove Download_LocalGrab from the list
+      filtered_files=()
+      for f in "${files[@]}"; do
+        [[ "$f" == Download_LocalGrab.* ]] && continue
+        filtered_files+=("$f")
+      done
+
+      folder_name="${path#scripts/}"
+      for f in "${filtered_files[@]}"; do
+        SCRIPTS_BY_FOLDER["$folder_name"]+="$f"$'\n'
+      done
+    done
+
+    # Only fetch Beta if enabled!
+    if $BETA_ENABLED; then
+      log_info "🔍 Checking: beta"
+      beta_response=$(github_fetch "https://api.github.com/repos/devmesis/betagrap/contents/beta" "$AUTH_HEADER")
+      if [[ -z "$beta_response" ]]; then
+        log_info "⚠️ Failed to fetch beta scripts"
+        beta_response=""
+      fi
+
+      beta_files=()
+      if [[ -n "$beta_response" ]]; then
+        if command -v jq >/dev/null 2>&1; then
+          while IFS= read -r file; do
+            beta_files+=("$file")
+          done < <(echo "$beta_response" | jq -r '.[] | select(.name | test("\\.(py|sh)$"; "i")) | .name')
+        else
+          tmpfile=$(mktemp)
+          echo "$beta_response" | grep -ioE '"name": "[^"]+\.(py|sh)"' | cut -d '"' -f4 > "$tmpfile"
+          while IFS= read -r file; do
+            beta_files+=("$file")
+          done < "$tmpfile"
+          rm -f "$tmpfile"
+        fi
+      fi
+
+      # Filter and add Beta scripts to the Beta folder
+      for f in "${beta_files[@]}"; do
+        [[ "$f" == Download_LocalGrab.* ]] && continue
+        SCRIPTS_BY_FOLDER["Beta"]+="$f"$'\n'
+      done
+    fi
+
+else
+  # For specific system (e.g., Windows, Mac, Linux, Other)
+  for path in "${GH_PATHS[@]}"; do
+    log_info "🔍 Checking: $path"
+    response=$(github_fetch "https://api.github.com/repos/devmesis/scriptgrab/contents/$path" "$AUTH_HEADER")
+    if [[ -z "$response" ]]; then
+      log_info "⚠️ Failed to fetch $path"
+      continue
+    fi
+
     files=()
     if command -v jq >/dev/null 2>&1; then
       while IFS= read -r file; do
@@ -262,21 +331,14 @@ if [[ "$SYSTEM" == "All" ]]; then
     done
 
     folder_name="${path#scripts/}"
-    for f in "${filtered_files[@]}"; do
-      SCRIPTS_BY_FOLDER["$folder_name"]+="$f"$'\n'
-    done
+    SCRIPTS_BY_FOLDER["$folder_name"]=$(printf '%s\n' "${filtered_files[@]}")
+
   done
 
-  # Only fetch Beta if enabled!
+  # If Beta enabled, fetch beta scripts
   if $BETA_ENABLED; then
     log_info "🔍 Checking: beta"
     beta_response=$(github_fetch "https://api.github.com/repos/devmesis/betagrap/contents/beta" "$AUTH_HEADER")
-    if [[ -z "$beta_response" ]]; then
-      log_info "⚠️ Failed to fetch beta scripts"
-      beta_response=""
-    fi
-
-
     beta_files=()
     if [[ -n "$beta_response" ]]; then
       if command -v jq >/dev/null 2>&1; then
@@ -293,13 +355,15 @@ if [[ "$SYSTEM" == "All" ]]; then
       fi
     fi
 
-    # Filter and add Beta scripts to the Beta folder
+    filtered_beta_files=()
     for f in "${beta_files[@]}"; do
       [[ "$f" == Download_LocalGrab.* ]] && continue
-      SCRIPTS_BY_FOLDER["Beta"]+="$f"$'\n'
+      filtered_beta_files+=("$f")
     done
+    SCRIPTS_BY_FOLDER["Beta"]=$(printf '%s\n' "${filtered_beta_files[@]}")
   fi
 fi
+
 
 
 # ────────────────────────────────────────────────
@@ -411,54 +475,137 @@ if [[ "$SYSTEM" == "All" ]]; then
     fi
   done
 
-else
-  echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
-  index=1
-  declare -A INDEX_TO_SCRIPT
+  else
+    echo -e "\n\e[1;36m📜 Scripts for $SYSTEM:\e[0m\n"
+    declare -A INDEX_TO_SCRIPT
+    INDEX=1
 
-  for i in "${!ARR[@]}"; do
-    printf "%2d) %s\n" "$((i+1))" "${DISPLAY[i]}"
-    INDEX_TO_SCRIPT[$((i+1))]="${ARR[i]}"
-  done
+    folder="${GH_PATHS[0]#scripts/}"  # e.g. "MacOS"
 
-  while true; do
-    read -rp $'\n\e[1;33m👉 Your choice: \e[0m' reply
-
-    if [[ "$reply" =~ ^[qQ]$ ]]; then
-      printf "\n\e[1;33m👋 Bye!\e[0m\n\n"
-      exit 0
-    fi
-
-    if [[ "$reply" == "cheats" ]]; then
-      secret_menu
-      echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
-      for i in "${!ARR[@]}"; do
-        printf "%2d) %s\n" "$((i+1))" "${DISPLAY[i]}"
-        INDEX_TO_SCRIPT[$((i+1))]="${ARR[i]}"
-      done
-      continue
-    fi
-
-    if [[ "$reply" =~ ^[0-9]+$ ]]; then
-      if [[ -n "${INDEX_TO_SCRIPT[$reply]:-}" ]]; then
-        script_name="${INDEX_TO_SCRIPT[$reply]}"
-        echo -e "\n\e[1;34m🚀 Running $script_name\e[0m\n"
-        if [[ "$folder" == "Beta" ]]; then
-          url="https://raw.githubusercontent.com/devmesis/betagrap/main/beta/$script_name"
-        else
-          url="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scripts/$folder/$script_name"
-        fi
-        if [[ "$script_name" == *.py ]]; then
-          curl -sL "$url" | python3
-        else
-          curl -sL "$url" | bash
-        fi
-        exit 0
-      else
-        echo "⚠ Invalid choice."
-      fi
+    if [[ -n "${SCRIPTS_BY_FOLDER[$folder]}" ]]; then
+      while IFS= read -r script; do
+        [[ -z "$script" ]] && continue
+        base="${script%.*}"
+        pretty="${base//_/ }"
+        printf " %2d) %s\n" "$INDEX" "$pretty"
+        INDEX_TO_SCRIPT["$INDEX"]="$folder/$script"
+        ((INDEX++))
+      done <<< "${SCRIPTS_BY_FOLDER[$folder]}"
     else
-      echo "⚠ Invalid choice."
+      echo "⚠ No scripts found for $SYSTEM."
     fi
-  done
-fi
+
+    # Add Beta scripts if Beta enabled
+    if $BETA_ENABLED && [[ -n "${SCRIPTS_BY_FOLDER[Beta]}" ]]; then
+      echo -e "\n\e[1;33m📜 Beta Scripts:\e[0m"
+      while IFS= read -r script; do
+        [[ -z "$script" ]] && continue
+        base="${script%.*}"
+        pretty="${base//_/ }"
+        printf " %2d) [BETA] %s\n" "$INDEX" "$pretty"
+        INDEX_TO_SCRIPT["$INDEX"]="Beta/$script"
+        ((INDEX++))
+      done <<< "${SCRIPTS_BY_FOLDER[Beta]}"
+    fi
+
+    echo
+
+    PS3=$'\n\e[1;31m❌ Q=Quit | U=Update | A=Auto-Update\e[0m\n\n\e[1;33m👉 Your choice : \e[0m'
+
+    while true; do
+      read -rp $'\n\e[1;33m👉 Your choice: \e[0m' reply
+      case "${reply,,}" in
+        q)
+          printf "\n\e[1;33m👋 Bye!\e[0m\n\n"
+          exit 0
+          ;;
+        u)
+          echo -e "\n\e[1;34m🔄 Updating ScriptGrab to latest version...\e[0m\n"
+          spin='|/-\'
+          for i in {1..20}; do
+            i=$(( (i+1) %4 ))
+            printf "\r\e[1;36m[%c] Updating...\e[0m" "${spin:$i:1}"
+            sleep 0.1
+          done
+          printf "\r\e[1;36m[✔] Restarting!\e[0m\n"
+          sleep 0.3
+          exec "$0" "$@"
+          ;;
+        a)
+          if [[ -f $AUTO_UPDATE_FILE ]] && grep -q "yes" "$AUTO_UPDATE_FILE"; then
+            echo "no" > "$AUTO_UPDATE_FILE"
+            printf "\n\e[1;33mAuto-update disabled.\e[0m\n\n"
+          else
+            echo "yes" > "$AUTO_UPDATE_FILE"
+            printf "\n\e[1;32mAuto-update enabled.\e[0m\n\n"
+          fi
+          continue
+          ;;
+        cheats)
+          secret_menu
+          echo -e "\n\e[1;36m📜 Scripts for $SYSTEM:\e[0m\n"
+          # Redisplay scripts after secret menu
+          INDEX=1
+          if [[ -n "${SCRIPTS_BY_FOLDER[$folder]}" ]]; then
+            while IFS= read -r script; do
+              [[ -z "$script" ]] && continue
+              base="${script%.*}"
+              pretty="${base//_/ }"
+              printf " %2d) %s\n" "$INDEX" "$pretty"
+              INDEX_TO_SCRIPT["$INDEX"]="$folder/$script"
+              ((INDEX++))
+            done <<< "${SCRIPTS_BY_FOLDER[$folder]}"
+          fi
+          if $BETA_ENABLED && [[ -n "${SCRIPTS_BY_FOLDER[Beta]}" ]]; then
+            echo -e "\n\e[1;33m📜 Beta Scripts:\e[0m"
+            while IFS= read -r script; do
+              [[ -z "$script" ]] && continue
+              base="${script%.*}"
+              pretty="${base//_/ }"
+              printf " %2d) [BETA] %s\n" "$INDEX" "$pretty"
+              INDEX_TO_SCRIPT["$INDEX"]="Beta/$script"
+              ((INDEX++))
+            done <<< "${SCRIPTS_BY_FOLDER[Beta]}"
+          fi
+          continue
+          ;;
+        r)
+          echo -e "\n\e[1;34m🔁 Restarting ScriptGrab...\e[0m\n"
+          spin='|/-\'
+          for i in {1..20}; do
+            i=$(( (i+1) %4 ))
+            printf "\r\e[1;36m[%c] Restarting...\e[0m" "${spin:$i:1}"
+            sleep 0.1
+          done
+          printf "\r\e[1;36m[✔] Restarting!\e[0m\n"
+          sleep 0.3
+          exec "$0" "$@"
+          ;;
+        *)
+          if [[ "$reply" =~ ^[0-9]+$ ]]; then
+            if [[ -n "${INDEX_TO_SCRIPT[$reply]:-}" ]]; then
+              script_path="${INDEX_TO_SCRIPT[$reply]}"
+              folder="${script_path%%/*}"
+              script_name="${script_path#*/}"
+              echo -e "\n\e[1;34m🚀 Running $script_name from $folder\e[0m\n"
+              if [[ "$folder" == "Beta" ]]; then
+                url="https://raw.githubusercontent.com/devmesis/betagrap/main/beta/$script_name"
+              else
+                url="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scripts/$folder/$script_name"
+              fi
+              if [[ "$script_name" == *.py ]]; then
+                curl -sL "$url" | python3
+              else
+                curl -sL "$url" | bash
+              fi
+              exit 0
+            else
+              echo "⚠ Invalid choice."
+            fi
+          else
+            echo "⚠ Invalid choice."
+          fi
+          ;;
+      esac
+    done
+  fi
