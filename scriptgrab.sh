@@ -71,7 +71,7 @@ function secret_menu() {
     read -rp "Toggle Cheats: " CMD
     case "$(echo "$CMD" | tr '[:upper:]' '[:lower:]')" in
       reset)
-        rm -f "$SYSTEM_FILE" "$BETA_FILE"
+        rm -f "$SYSTEM_FILE" "$BETA_FILE" "$LOG_FILE"
         printf "\n\e[1;32mPreferences reset. Please restart script.\e[0m\n\n"
         exit 0
         ;;
@@ -93,13 +93,13 @@ function secret_menu() {
           printf "\n\e[1;32mAll mode enabled.\e[0m\n\n"
         fi
         ;;
-      autoupdate)
-        if [[ -f $AUTO_UPDATE_FILE ]] && grep -q "yes" "$AUTO_UPDATE_FILE"; then
-          echo "no" > "$AUTO_UPDATE_FILE"
-          printf "\n\e[1;33mAuto-update disabled.\e[0m\n\n"
+      logs)
+        if [[ -f $LOG_FILE ]] && grep -iq "yes" "$LOG_FILE"; then
+          echo "no" > "$LOG_FILE"
+          printf "\n\e[1;33mLogging disabled.\e[0m\n\n"
         else
-          echo "yes" > "$AUTO_UPDATE_FILE"
-          printf "\n\e[1;32mAuto-update enabled.\e[0m\n\n"
+          echo "yes" > "$LOG_FILE"
+          printf "\n\e[1;32mLogging enabled.\e[0m\n\n"
         fi
         ;;
       exit|q|"")
@@ -112,6 +112,7 @@ function secret_menu() {
     esac
   done
 }
+
 
 # ────────────────────────────────────────────────
 #  Auto-update on Boot (if enabled)
@@ -161,7 +162,11 @@ case "$SYSTEM" in
   *) GH_PATHS+=("scripts") ;;
 esac
 
-[[ $LOAD_BETA == "yes" ]] && GH_PATHS+=("scripts/beta")
+if [[ $LOAD_BETA == "yes" ]]; then
+  BETA_ENABLED=true
+else
+  BETA_ENABLED=false
+fi
 
 # ────────────────────────────────────────────────
 #  Fetch Scripts with portable JSON parsing fallback
@@ -214,83 +219,79 @@ if [[ "$SYSTEM" == "All" ]]; then
     done
   done
 
-else
-  # For non-all system, just fetch scripts into one array
-  raw_names=()
-  for path in "${GH_PATHS[@]}"; do
-    log_info "🔍 Checking: $path"
-    response=$(curl -sf -H "User-Agent: ScriptGrab" -H "$AUTH_HEADER" --max-time 10 "https://api.github.com/repos/devmesis/scriptgrab/contents/$path") || {
-      log_info "⚠️ Failed to fetch $path"
-      continue
+  # Only fetch Beta if enabled!
+  if $BETA_ENABLED; then
+    log_info "🔍 Checking: beta"
+    beta_response=$(curl -sf -H "User-Agent: ScriptGrab" --max-time 10 "https://api.github.com/repos/devmesis/betagrap/contents/beta") || {
+      log_info "⚠️ Failed to fetch beta scripts"
+      beta_response=""
     }
 
-    if command -v jq >/dev/null 2>&1; then
-      while IFS= read -r file; do
-        raw_names+=("$file")
-      done < <(echo "$response" | jq -r '.[] | select(.name | test("\\.(py|sh)$"; "i")) | .name')
-    else
-      tmpfile=$(mktemp)
-      echo "$response" | grep -ioE '"name": "[^"]+\.(py|sh)"' | cut -d '"' -f4 > "$tmpfile"
-      while IFS= read -r file; do
-        raw_names+=("$file")
-      done < "$tmpfile"
-      rm -f "$tmpfile"
+    beta_files=()
+    if [[ -n "$beta_response" ]]; then
+      if command -v jq >/dev/null 2>&1; then
+        while IFS= read -r file; do
+          beta_files+=("$file")
+        done < <(echo "$beta_response" | jq -r '.[] | select(.name | test("\\.(py|sh)$"; "i")) | .name')
+      else
+        tmpfile=$(mktemp)
+        echo "$beta_response" | grep -ioE '"name": "[^"]+\.(py|sh)"' | cut -d '"' -f4 > "$tmpfile"
+        while IFS= read -r file; do
+          beta_files+=("$file")
+        done < "$tmpfile"
+        rm -f "$tmpfile"
+      fi
     fi
-  done
 
-  # Remove Download_LocalGrab from the list entirely
-  ARR=()
-  for name in "${raw_names[@]}"; do
-    [[ "$name" == Download_LocalGrab.* ]] && continue
-    ARR+=("$name")
-  done
-
-  if (( ${#ARR[@]} == 0 )); then
-    printf "\e[1;31m❌ No scripts found!\e[0m\n"
-    exit 1
+    # Filter and add Beta scripts to the Beta folder
+    for f in "${beta_files[@]}"; do
+      [[ "$f" == Download_LocalGrab.* ]] && continue
+      SCRIPTS_BY_FOLDER["Beta"]+="$f"$'\n'
+    done
   fi
-
-  # Prettify display names
-  DISPLAY=()
-  for name in "${ARR[@]}"; do
-    base="${name%.*}"
-    pretty="${base//_/ }"
-    DISPLAY+=("$pretty")
-  done
 fi
 
+
 # ────────────────────────────────────────────────
-#  Interactive Menu
+#  Interactive Menu (Global Index, Beta-aware)
+# ────────────────────────────────────────────────
+
+# ────────────────────────────────────────────────
+#  Interactive Menu (Global Index, Beta-aware)
 # ────────────────────────────────────────────────
 
 PS3=$'\n\e[1;31m❌ Q for Quit\e[0m\n\n\e[1;33m👉 Your choice : \e[0m'
 
 if [[ "$SYSTEM" == "All" ]]; then
-  index=1
-  declare -A INDEX_TO_SCRIPT
   echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
+  declare -A INDEX_TO_SCRIPT
+  folders=(MacOS Linux Windows Other)
+  $BETA_ENABLED && folders+=(Beta)
 
-  rate_limited=true
+  INDEX=1
 
-  for folder in MacOS Linux Windows Other; do
-    if [[ -v SCRIPTS_BY_FOLDER[$folder] ]] && [[ -n "${SCRIPTS_BY_FOLDER[$folder]}" ]]; then
-      scripts="${SCRIPTS_BY_FOLDER[$folder]}"
+  for folder in "${folders[@]}"; do
+    if [[ -n "${SCRIPTS_BY_FOLDER[$folder]}" ]]; then
       echo -e "\e[1;33m📜 $folder Scripts:\e[0m"
       while IFS= read -r script; do
         [[ -z "$script" ]] && continue
         base="${script%.*}"
         pretty="${base//_/ }"
-        printf "%2d) %s\n" "$index" "$pretty"
-        INDEX_TO_SCRIPT["$index,$folder"]="$script"
-        ((index++))
-      done <<<"$scripts"
+        if [[ "$folder" == "Beta" ]]; then
+          printf " %2d) [BETA] %s\n" "$INDEX" "$pretty"
+        else
+          printf " %2d) %s\n" "$INDEX" "$pretty"
+        fi
+        INDEX_TO_SCRIPT["$INDEX"]="$folder/$script"  # Store full path
+        ((INDEX++))
+      done <<< "${SCRIPTS_BY_FOLDER[$folder]}"
       echo
-      rate_limited=false
     fi
   done
 
-  if $rate_limited; then
-    echo "🚫 You have been rate limited try again in 1 hour"
+  if (( INDEX == 1 )); then
+    echo "❌ No scripts found!"
+    exit 1
   fi
 
   while true; do
@@ -304,60 +305,61 @@ if [[ "$SYSTEM" == "All" ]]; then
     if [[ "$reply" == "cheats" ]]; then
       secret_menu
       echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
-      index=1
-      for folder in MacOS Linux Windows Other; do
-        scripts="${SCRIPTS_BY_FOLDER[$folder]}"
-        [[ -z "$scripts" ]] && continue
-        echo -e "\e[1;33m📜 $folder Scripts:\e[0m"
-        while IFS= read -r script; do
-          [[ -z "$script" ]] && continue
-          base="${script%.*}"
-          pretty="${base//_/ }"
-          printf "%2d) %s\n" "$index" "$pretty"
-          INDEX_TO_SCRIPT["$index,$folder"]="$script"
-          ((index++))
-        done <<<"$scripts"
-        echo
+      INDEX=1
+      for folder in "${folders[@]}"; do
+        if [[ -n "${SCRIPTS_BY_FOLDER[$folder]}" ]]; then
+          echo -e "\e[1;33m📜 $folder Scripts:\e[0m"
+          while IFS= read -r script; do
+            [[ -z "$script" ]] && continue
+            base="${script%.*}"
+            pretty="${base//_/ }"
+            if [[ "$folder" == "Beta" ]]; then
+              printf " %2d) [BETA] %s\n" "$INDEX" "$pretty"
+            else
+              printf " %2d) %s\n" "$INDEX" "$pretty"
+            fi
+            INDEX_TO_SCRIPT["$INDEX"]="$folder/$script"
+            ((INDEX++))
+          done <<< "${SCRIPTS_BY_FOLDER[$folder]}"
+          echo
+        fi
       done
       continue
     fi
 
     if [[ "$reply" == "update" ]]; then
-        # Manual update logic here
-        echo -e "\n\e[1;34m🔄 Updating ScriptGrab to latest version...\e[0m\n"
-        printf "\n" && sleep 2.0
-        # (Insert your update logic, e.g., pulling from GitHub)
-        exec "$0" "$@"
-      fi
+      echo -e "\n\e[1;34m🔄 Updating ScriptGrab to latest version...\e[0m\n"
+      printf "\n" && sleep 2.0
+      exec "$0" "$@"
+    fi
 
-      if [[ "$reply" == "auto-update" ]]; then
-        if [[ -f $AUTO_UPDATE_FILE ]] && grep -q "yes" "$AUTO_UPDATE_FILE"; then
-          echo "no" > "$AUTO_UPDATE_FILE"
-          printf "\n\e[1;33mAuto-update disabled.\e[0m\n\n"
-        else
-          echo "yes" > "$AUTO_UPDATE_FILE"
-          printf "\n\e[1;32mAuto-update enabled.\e[0m\n\n"
-        fi
-        continue
+    if [[ "$reply" == "auto-update" ]]; then
+      if [[ -f $AUTO_UPDATE_FILE ]] && grep -q "yes" "$AUTO_UPDATE_FILE"; then
+        echo "no" > "$AUTO_UPDATE_FILE"
+        printf "\n\e[1;33mAuto-update disabled.\e[0m\n\n"
+      else
+        echo "yes" > "$AUTO_UPDATE_FILE"
+        printf "\n\e[1;32mAuto-update enabled.\e[0m\n\n"
       fi
+      continue
+    fi
 
     if [[ "$reply" =~ ^[0-9]+$ ]]; then
-      found=0
-      for folder in MacOS Linux Windows Other; do
-        if [[ -n "${INDEX_TO_SCRIPT["$reply,$folder"]+set}" ]]; then
-          script_name="${INDEX_TO_SCRIPT["$reply,$folder"]}"
-          found=1
-          break
-        fi
-      done
-      if (( found )); then
+      if [[ -n "${INDEX_TO_SCRIPT[$reply]:-}" ]]; then
+        script_path="${INDEX_TO_SCRIPT[$reply]}"
+        folder="${script_path%%/*}"
+        script_name="${script_path#*/}"
         echo -e "\n\e[1;34m🚀 Running $script_name from $folder\e[0m\n"
-        url="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scripts/$folder/$script_name"
-            if [[ "$script_name" == *.py ]]; then
-              curl -sL "$url" | python3
-            else
-              curl -sL "$url" | bash
-            fi
+        if [[ "$folder" == "Beta" ]]; then
+          url="https://raw.githubusercontent.com/devmesis/betagrap/main/beta/$script_name"
+        else
+          url="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scripts/$folder/$script_name"
+        fi
+        if [[ "$script_name" == *.py ]]; then
+          curl -sL "$url" | python3
+        else
+          curl -sL "$url" | bash
+        fi
         exit 0
       else
         echo "⚠ Invalid choice."
@@ -399,12 +401,16 @@ else
       if [[ -n "${INDEX_TO_SCRIPT[$reply]:-}" ]]; then
         script_name="${INDEX_TO_SCRIPT[$reply]}"
         echo -e "\n\e[1;34m🚀 Running $script_name\e[0m\n"
-        url="<https://raw.githubusercontent.com/devmesis/scriptgrab/main/${GH_PATHS>[0]}/$script_name"
-            if [[ "$script_name" == *.py ]]; then
-              curl -sL "$url" | python3
-            else
-              curl -sL "$url" | bash
-            fi
+        if [[ "$folder" == "Beta" ]]; then
+          url="https://raw.githubusercontent.com/devmesis/betagrap/main/beta/$script_name"
+        else
+          url="https://raw.githubusercontent.com/devmesis/scriptgrab/main/scripts/$folder/$script_name"
+        fi
+        if [[ "$script_name" == *.py ]]; then
+          curl -sL "$url" | python3
+        else
+          curl -sL "$url" | bash
+        fi
         exit 0
       else
         echo "⚠ Invalid choice."
