@@ -410,7 +410,6 @@ if [[ "$SYSTEM" == "All" ]]; then
       echo "⚠ Invalid choice."
     fi
   done
-fi
 
 else
   echo -e "\n\e[1;36m📜 Scripts:\e[0m\n"
