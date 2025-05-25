@@ -2,7 +2,7 @@
 
 # ⚡ ScriptGrab
 
-[![Version](https://img.shields.io/badge/version-0.0.2-blue)](https://github.com/devmesis/scriptgrab)
+[![Version](https://img.shields.io/badge/version-0.0.3-blue)](https://github.com/devmesis/scriptgrab)
 [![By Devmesis](https://img.shields.io/badge/creator-Devmesis-black)](https://devmesis.com)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/devmesis/scriptgrab/blob/main/LICENSE)
 [![Open Source](https://img.shields.io/badge/open--source-100%25-brightgreen)](https://github.com/devmesis/scriptgrab)
