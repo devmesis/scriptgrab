@@ -2,7 +2,7 @@
 
 # ScriptGrab
 
-[![Version](https://img.shields.io/badge/version-0.0.1-blue)](https://github.com/devmesis/scriptgrab)
+[![Version](https://img.shields.io/badge/version-0.0.2-blue)](https://github.com/devmesis/scriptgrab)
 [![By Devmesis](https://img.shields.io/badge/by-Devmesis-black)](https://devmesis.com)
 [![Open Source](https://img.shields.io/badge/open--source-yes-brightgreen)](https://github.com/devmesis/scriptgrab)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet)](https://github.com/devmesis/scriptgrab/pulls)
@@ -11,10 +11,6 @@
 
 ### ⚡️ Run any shell script straight from GitHub
 #### No fluff. Just speed.
-
-<pre>
-bash &lt;(curl -sL scriptgrab.com)
-</pre>
 
 ---
 
@@ -30,6 +26,10 @@ One command to rule them all.
 ---
 
 ### 🚀 Quick Start
+
+ ```bash
+bash <(curl -sL scriptgrab.com)
+ ```
 
 Copy the command above, paste it in your terminal, and watch the magic.
 
