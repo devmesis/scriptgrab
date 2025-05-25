@@ -8,6 +8,10 @@
 [![Open Source](https://img.shields.io/badge/open--source-100%25-brightgreen)](https://github.com/devmesis/scriptgrab)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet)](https://github.com/devmesis/scriptgrab/pulls)
 
+<sub>
+📅 Sunday, May 25, 2025 · Made with ❤️ for developers who move fast.
+</sub>
+
 ---
 
 ### 🚀 Run Any Shell Script from GitHub – Instantly
@@ -94,12 +98,6 @@ Let’s build it faster—together.
 
 Crafted with ☕, code, and a bit of chaos by [Devmesis](https://devmesis.com).  
 Connect on [LinkedIn](https://linkedin.com/in/ginodg) · [X/Twitter](https://x.com/Devmesis)
-
----
-
-<sub>
-📅 Sunday, May 25, 2025 · Made with ❤️ for developers who move fast.
-</sub>
 
 ---
 
