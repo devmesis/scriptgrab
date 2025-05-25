@@ -36,6 +36,8 @@ It lets you **grab and run shell scripts** directly from GitHub in seconds.
 
 Perfect for developers, sysadmins, and makers who hate wasting time.
 
+
+
 ---
 
 ### 💡 Why Use ScriptGrab?
@@ -90,3 +92,12 @@ Connect on [LinkedIn](https://linkedin.com/in/ginodg) · [X/Twitter](https://x.c
 
 ### 🛴 Ready to ride?
 Fire it up and grab your scripts.
+
+---
+
+###### Quick Notes
+> 💡 Prefer a local experience? While the cloud version works everywhere, cloning the repo allows for **better root access** and is recommended for **heavier or system-level tasks**.
+
+> 🛠️ You can also **customize and redirect ScriptGrab to your own GitHub repo**, making it perfect for internal tools, private scripts, or team-specific setups.
+
+> ⚠️ **Shell scripts can be powerful and risky.** Even small scripts can cause serious damage if misused. I strongly recommend **cloning this repo or creating your own fork** if you're cautious, especially for production environments. Or stay on the official repo to ensure you’re using trusted, reviewed code.
