@@ -1,74 +1,92 @@
 <div align="center">
 
-# ScriptGrab
+# ⚡ ScriptGrab
 
 [![Version](https://img.shields.io/badge/version-0.0.2-blue)](https://github.com/devmesis/scriptgrab)
-[![By Devmesis](https://img.shields.io/badge/by-Devmesis-black)](https://devmesis.com)
-[![Open Source](https://img.shields.io/badge/open--source-yes-brightgreen)](https://github.com/devmesis/scriptgrab)
+[![By Devmesis](https://img.shields.io/badge/creator-Devmesis-black)](https://devmesis.com)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/devmesis/scriptgrab/blob/main/LICENSE)
+[![Open Source](https://img.shields.io/badge/open--source-100%25-brightgreen)](https://github.com/devmesis/scriptgrab)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blueviolet)](https://github.com/devmesis/scriptgrab/pulls)
 
 ---
 
-### ⚡️ Run any shell script straight from GitHub
-#### No fluff. Just speed.
+### 🚀 Run Any Shell Script from GitHub – Instantly
 
----
+No downloads. No setup. Just one command to rule them all.
 
-### 🛠️ What’s This?
-
-Scriptgrab is for the doers.
-Grab scripts. Run them fast. Skip the boring stuff.
-
-No downloads.
-No setup.
-One command to rule them all.
-
----
-
-### 🚀 Quick Start
-
- ```bash
+```bash
 bash <(curl -sL scriptgrab.com)
- ```
+```
 
-Copy the command above, paste it in your terminal, and watch the magic.
-
----
-
-### 🤘 Why Scriptgrab?
-
-Lightning fast.
-No more hunting for install scripts.
-Zero bloat, zero dependencies, zero mess.
-Get going in seconds, not minutes.
 
 ---
 
-### 🌍 Open Project – Join the Ride!
+### 🛠️ What is ScriptGrab?
 
-Scriptgrab is open source and always hungry for new ideas, fixes, and wild experiments.
-Pull requests, issues, and suggestions are not just welcome—they’re encouraged.
+ScriptGrab is built for speed and simplicity.  
+It lets you **grab and run shell scripts** directly from GitHub in seconds.
 
-[Contribute](https://github.com/devmesis/scriptgrab/pulls) · [Report an Issue](https://github.com/devmesis/scriptgrab/issues) · [Star the Repo](https://github.com/devmesis/scriptgrab)
+⚡ **Fast** — Instant access to curated scripts.
 
-Let’s break it, fix it, and make it faster—together.
+
+🧼 **Clean** — No install, no clutter.
+
+
+🔐 **Safe** — No shady copy-paste jobs.
+
+Perfect for developers, sysadmins, and makers who hate wasting time.
 
 ---
 
-### 👤 About
+### 💡 Why Use ScriptGrab?
 
-Made with caffeine, code, and chaos by [Devmesis](https://devmesis.com).
-Find me on [LinkedIn](https://linkedin.com/in/ginodg) · [X/Twitter](https://x.com/Devmesis) · [Devmesis.com](https://devmesis.com)
+🚫 No more digging through repos.
+
+
+💥 Skip the setup and config.
+
+
+📦 Zero dependencies.
+
+
+🧪 Supports stable & beta channels.
+
+
+🧩 Modular and open-source.
+
+Copy. Paste. Go. That’s it.
+
+---
+
+### 🌍 Community & Contributions
+
+ScriptGrab thrives on community.  
+Whether you're fixing bugs, suggesting features, or pushing wild experiments, we want you in.
+
+🤝 [Contribute](https://github.com/devmesis/scriptgrab/pulls)
+
+
+🐛 [Report Issues](https://github.com/devmesis/scriptgrab/issues)
+
+
+⭐️ [Star the Repo](https://github.com/devmesis/scriptgrab)
+
+Let’s build it faster—together.
+
+---
+
+### 👤 About the Creator
+
+Crafted with ☕, code, and a bit of chaos by [Devmesis](https://devmesis.com).  
+Connect on [LinkedIn](https://linkedin.com/in/ginodg) · [X/Twitter](https://x.com/Devmesis)
 
 ---
 
 <sub>
-Current date: Sunday, May 25, 2025, 3:33 PM CEST
+📅 Sunday, May 25, 2025 · Made with ❤️ for developers who move fast.
 </sub>
 
 ---
 
-Ready to break, fix, and make it faster?
-Let’s ride. 🛴💨
-
-</div>
+### 🛴 Ready to ride?
+Fire it up and grab your scripts.
