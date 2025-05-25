@@ -28,6 +28,9 @@ bash <(curl -sL scriptgrab.com)
 ###### The output is the raw shell script content from that URL. 
 ###### bash <( ... ): The <( ... ) syntax is called process substitution. It takes the output from the curl command and treats it as a temporary file, then passes that file to bash to execute.
 
+###### [scriptgrab.com](https://scriptgrab.com) is just the application layer, the “header” or GUI if you like. All the actual scripts live in the [/scripts](https://github.com/devmesis/scriptgrab/tree/main/scripts) folder on GitHub, open for you to inspect, fork, or hack. No black boxes. No surprises. Check the code before you run it.
+
+
 ##### In plain English:
 ###### This command instantly downloads a shell script from [scriptgrab.com](https://scriptgrab.com) and runs it in your terminal, all in one go, no manual downloads, no saving files, just direct execution. It’s a super-fast way to run remote scripts, perfect for engineers who want to skip the hassle and get straight to automating tasks.
 
