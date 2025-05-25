@@ -22,6 +22,17 @@ No downloads. No setup. Just one command to rule them all.
 bash <(curl -sL scriptgrab.com)
 ```
 
+##### Does the following:
+
+###### curl -sL scriptgrab.com: This part uses curl to silently (-s) and following any redirects (-L) download whatever script or file is served at  [scriptgrab.com](https://scriptgrab.com).  
+###### The output is the raw shell script content from that URL. 
+###### bash <( ... ): The <( ... ) syntax is called process substitution. It takes the output from the curl command and treats it as a temporary file, then passes that file to bash to execute.
+
+##### In plain English:
+###### This command instantly downloads a shell script from [scriptgrab.com](https://scriptgrab.com) and runs it in your terminal, all in one go, no manual downloads, no saving files, just direct execution. It’s a super-fast way to run remote scripts, perfect for engineers who want to skip the hassle and get straight to automating tasks.
+
+##### Caution:
+###### Because this runs code directly from the internet, you should only use it with sources you trust. Running remote scripts as root or on production systems can be risky if you don’t know exactly what the script does.
 
 ---
 
