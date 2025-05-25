@@ -51,7 +51,7 @@ It lets you grab and run shell scripts straight from GitHub, instantly.
 
 🔐 **Safe** — No shady copy-paste jobs.
 
-Perfect for developers, sysadmins, and makers who hate wasting time.
+###### Perfect for developers, sysadmins, and makers who hate wasting time.
 
 
 
@@ -73,7 +73,7 @@ Perfect for developers, sysadmins, and makers who hate wasting time.
 
 🧩 Modular and open-source.
 
-Copy. Paste. Go. That’s it.
+###### Copy. Paste. Go. That’s it.
 
 ---
 
@@ -90,7 +90,7 @@ Fix a bug, suggest a feature, or go wild with your own scripts, jump in!
 
 ⭐️ [Star the Repo](https://github.com/devmesis/scriptgrab)
 
-Let’s build it faster—together.
+###### Let’s build it faster together.
 
 ---
 
@@ -99,14 +99,6 @@ Let’s build it faster—together.
 Crafted with ☕, code, and a bit of chaos by [Devmesis](https://devmesis.com).  
 Connect on [LinkedIn](https://linkedin.com/in/ginodg) · [X/Twitter](https://x.com/Devmesis)
 
----
-
-### 🛴 Ready to ride?
-Fire it up and grab your scripts.
-
----
-
-### That’s it.
 ###### ScriptGrab: Because engineers should spend more time building, less time clicking.
 
 ---
