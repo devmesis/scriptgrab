@@ -28,11 +28,11 @@ IS_BETA=${IS_BETA:-0}
 #  📝 Logging Configuration
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ALL_LOGS=0  
-INFO_LOGS=1
-DEBUG_LOGS=1
-WARN_LOGS=1
-ERROR_LOGS=1
+export ALL_LOGS=${ALL_LOGS:-0}  
+export INFO_LOGS=1
+export DEBUG_LOGS=1
+export WARN_LOGS=1
+export ERROR_LOGS=1
 
 TERM_WIDTH=$(tput cols)
 
@@ -272,7 +272,10 @@ printf "\n"
 center_colored_text "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" "\e[1;36m"
 echo -e "\n"
 
-# Function to show OS menu
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🖥️ OS Menu Function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 show_os_menu() {
     clear
     display_banner
@@ -299,7 +302,10 @@ show_os_menu() {
     echo -e "\n"
 }
 
-# Function to show script menu
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  📜 Script Menu Function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 show_script_menu() {
     while true; do
         clear
@@ -319,14 +325,12 @@ show_script_menu() {
         for i in "${!names[@]}"; do
             script_path="${names[$i]}"
             if [[ $IS_CRACKED -eq 1 ]]; then
-                # For cracked mode, show OS/script_name format
-                base="${script_path%/*}"  # Get OS part
-                name="${script_path##*/}"  # Get script name part
-                name="${name%.*}"  # Remove extension
+                base="${script_path%/*}"  
+                name="${script_path##*/}" 
+                name="${name%.*}"  
                 pretty="${name//_/ }"
                 center_colored_text "$(printf "  %2d) [%s] %s  " "$((i+1))" "$base" "$pretty")" "\e[1;37m"
             else
-                # Normal mode
                 base="${script_path%.*}"
                 pretty="${base//_/ }"
                 center_colored_text "$(printf "  %2d) %s  " "$((i+1))" "$pretty")" "\e[1;37m"
@@ -349,12 +353,12 @@ show_script_menu() {
                     restart_script "$@"
                 elif [[ $IS_CRACKED -eq 1 ]]; then
                     export IS_CRACKED=0
-                    center_colored_text "🔒 Cracked Mode Deactivated" "\e[1;32m"
+                    center_colored_text "🔒 Crack Mode Deactivated" "\e[1;32m"
                     sleep 1
                     restart_script "$@"
                 else
                     show_os_menu
-                    return 0  # Return to OS menu
+                    return 0
                 fi
                 ;;
             q) 
@@ -366,7 +370,7 @@ show_script_menu() {
                 exit 0 
                 ;;
             r) 
-                continue  # Just continue the loop to refresh the current page
+                continue  
                 ;;
             [1-9]|[1-9][0-9]*)
                 if (( reply >= 1 && reply <= ${#names[@]} )); then
@@ -385,12 +389,30 @@ show_script_menu() {
                     center_colored_text "━━━━━━━━━━━━━━ 🚀 Running $script_name... ━━━━━━━━━━━━━━" "\e[1;34m"
                     printf "\n"
 
-                    if [[ "$script_name" == *.py ]]; then
-                        curl -sL "$url" | python3
-                    elif [[ "$script_name" == *.ps1 ]]; then
-                        curl -sL "$url" | pwsh -NoProfile -
+                    tmpfile=$(mktemp)
+                    if [[ $ALL_LOGS -eq 1 ]]; then
+                        log_debug "Created temporary file: $tmpfile"
+                    fi
+
+                    if curl -sL "$url" -o "$tmpfile"; then
+                        if [[ $ALL_LOGS -eq 1 ]]; then
+                            log_debug "Successfully downloaded script from: $url"
+                        fi
+
+                        if [[ "$script_name" == *.py ]]; then
+                            ALL_LOGS=$ALL_LOGS INFO_LOGS=$INFO_LOGS DEBUG_LOGS=$DEBUG_LOGS WARN_LOGS=$WARN_LOGS ERROR_LOGS=$ERROR_LOGS python3 "$tmpfile"
+                        elif [[ "$script_name" == *.ps1 ]]; then
+                            ALL_LOGS=$ALL_LOGS INFO_LOGS=$INFO_LOGS DEBUG_LOGS=$DEBUG_LOGS WARN_LOGS=$WARN_LOGS ERROR_LOGS=$ERROR_LOGS pwsh -NoProfile -File "$tmpfile"
+                        else
+                            ALL_LOGS=$ALL_LOGS INFO_LOGS=$INFO_LOGS DEBUG_LOGS=$DEBUG_LOGS WARN_LOGS=$WARN_LOGS ERROR_LOGS=$ERROR_LOGS bash "$tmpfile"
+                        fi
                     else
-                        curl -sL "$url" | bash
+                        log_error "Failed to download script from: $url"
+                    fi
+
+                    rm -f "$tmpfile"
+                    if [[ $ALL_LOGS -eq 1 ]]; then
+                        log_debug "Cleaned up temporary file"
                     fi
                     
                     printf "\n"
@@ -421,7 +443,10 @@ show_script_menu() {
     done
 }
 
-# Main menu loop
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  🔄 Main Program Loop
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 while true; do
     printf "    "
     prompt_text "👉 Your choice: "
@@ -429,7 +454,10 @@ while true; do
     
     case "${choice,,}" in
         beta)
-            export IS_BETA=$((1-IS_BETA))  # Toggle between 0 and 1 and export it
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            #  🧪 Beta Mode Handler
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            export IS_BETA=$((1-IS_BETA))  
             if [[ $IS_BETA -eq 1 ]]; then
                 center_colored_text "🧪 Switched to Beta Channel" "\e[1;35m"
                 export GH_REPO=$BETA_REPO
@@ -479,9 +507,12 @@ while true; do
             fi
             ;;
         crack)
-            export IS_CRACKED=$((1-IS_CRACKED))  # Toggle between 0 and 1 and export it
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            #  🔓 Crack Mode Handler
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            export IS_CRACKED=$((1-IS_CRACKED))  
             if [[ $IS_CRACKED -eq 1 ]]; then
-                center_colored_text "🔓 Cracked Mode Activated" "\e[1;31m"
+                center_colored_text "🔓 Crack Mode Activated" "\e[1;31m"
                 
                 log_info "🌐 Fetching all scripts..."
                 printf "\n"
@@ -501,7 +532,6 @@ while true; do
                     exit 1
                 fi
                 
-                # First get all OS directories
                 os_dirs=()
                 if command -v jq >/dev/null 2>&1; then
                     while IFS= read -r dir; do
@@ -513,7 +543,6 @@ while true; do
                     done < <(echo "$response" | grep -oE '"name":\s*"[^"]+".*"type":\s*"dir"' | cut -d'"' -f4)
                 fi
                 
-                # Now fetch scripts from each OS directory
                 names=()
                 for os_dir in "${os_dirs[@]}"; do
                     response=$(github_fetch "https://api.github.com/repos/$GH_USER/$GH_REPO/contents/scripts/$os_dir")
@@ -537,13 +566,13 @@ while true; do
                 show_script_menu
                 continue
             else
-                center_colored_text "🔒 Cracked Mode Deactivated" "\e[1;32m"
+                center_colored_text "🔒 Crack Mode Deactivated" "\e[1;32m"
                 sleep 1
                 restart_script "$@"
             fi
             ;;
         logs)
-            ALL_LOGS=$((1-ALL_LOGS))  # Toggle between 0 and 1
+            ALL_LOGS=$((1-ALL_LOGS))  
             center_colored_text "🔄 Logging has been turned $([ "$ALL_LOGS" -eq 1 ] && echo "ON" || echo "OFF")" "\e[1;35m"
             sleep 1
             ;;
@@ -559,11 +588,13 @@ while true; do
             restart_script 
             ;;
         [1-5])
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            #  📂 Script Selection Handler
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             opt="${options[$((choice-1))]}"
             if [[ "$opt" == "GitHub" ]]; then
                 echo -e "\n\e[1;34m🌐 Opening ScriptGrab GitHub repo...\e[0m"
                 REPO_URL="https://github.com/devmesis/scriptgrab"
-                # Detect OS and open URL in default browser
                 if command -v xdg-open >/dev/null; then
                     xdg-open "$REPO_URL"
                 elif command -v open >/dev/null; then
@@ -582,7 +613,6 @@ while true; do
                 Other)    SYSTEM="Other";;
             esac
 
-            # Set the script folder based on mode
             if [[ $IS_BETA -eq 1 ]]; then
                 GH_OSFOLDER="$BETA_PATH/$SYSTEM"
             else
